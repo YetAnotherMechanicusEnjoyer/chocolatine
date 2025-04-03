@@ -1,8 +1,8 @@
 NAME
-        template - Yet Another template
+        chocolatine - Yet Another Chocolatine
 
 USAGE
-        ./template [OPTIONS] <file>
+        ./chocolatine [OPTIONS] <file>
 
 DESCRIPTION
         ...
