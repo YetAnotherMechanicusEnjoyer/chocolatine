@@ -9,6 +9,5 @@
 
 int main(int argc, const char *argv[])
 {
-    int i, j;
     return initialise(argc, argv);
 }
