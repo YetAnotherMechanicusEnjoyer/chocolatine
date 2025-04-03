@@ -18,7 +18,7 @@ jobs:
     container: ghcr.io/epitech/coding-style-checker:latest
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3niqu
+        uses: actions/checkout@v3
         with:
           repository: ''
 
