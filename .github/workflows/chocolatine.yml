@@ -25,7 +25,7 @@ jobs:
       - name: Coding Style
         run: check.sh . /tmp
 
-      - name: Annotations Coding Style
+      - name: Coding style error
         run: |
           input=/tmp/coding-style-reports.log
           while IFS= read -r line; do
