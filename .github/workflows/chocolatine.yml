@@ -7,13 +7,18 @@ on:
   pull_request:
     branches-ignore:
       - " ga-ignore-"
+
+env:
+  MIRROR_URL: git@github.com:EpitechPGEPromo2029/B-DOP-200-BDX-2-1-chocolatine-ahmed.al-rawi.git
+  EXECUTABLES: "chocolatine"
+
 jobs:
   coding-style-checker:
     runs-on: ubuntu-latest
     container: ghcr.io/epitech/coding-style-checker:latest
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3niqu
         with:
           repository: ''
 
