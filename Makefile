@@ -49,7 +49,7 @@ OBJ			=	$(SRC:.c=.o)
 
 CFLAGS		=	-I./include -g -Wall -Wextra
 
-BINARY		=	template
+BINARY		=	chocolatine
 
 all: 	$(BINARY)
 
