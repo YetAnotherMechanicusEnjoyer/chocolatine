@@ -62,7 +62,7 @@ jobs:
 
       - name: Check Compilation
         run: |
-          for file in ${{ vars.EXECUTABLES }}; do
+          for file in ${{ env.EXECUTABLES }}; do
             if [ ! -x "$file" ]; then
               echo "File $file does not exist or is not executable"
               exit 1
@@ -94,5 +94,5 @@ jobs:
 
       - uses: pixta-dev/repository-mirroring-action@v1
         with:
-          target_repo_url: ${{ vers.MIRROR_URL }}
+          target_repo_url: ${{ env.MIRROR_URL }}
           ssh_private_key: ${{ secrets.GIT_SSH_PRIVATE_KEY }}
