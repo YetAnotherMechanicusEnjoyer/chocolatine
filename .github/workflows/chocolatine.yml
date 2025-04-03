@@ -1,0 +1,37 @@
+name: chocolatine
+run-name: ${{ github.actor }} checker
+on: 
+  push:
+    branches-ignores:
+      - " ga-ignore-"
+  pull_request:
+    branches-ignores:
+      - " ga-ignore-"
+jobs:
+  coding-style-checker:
+    runs-on: ubuntu-latest
+    container: ghcr.io/epitech/coding-style-checker:latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+        with:
+          repository: ""
+
+      - name: Coding Style
+        run: check.sh . /tmp
+
+      - name: Annotations Coding Style
+        run: |
+          input=/tmp/coding-style-reports.log
+          while IFS= read -ra line; do
+            fields=($(printf "%s" "$line" | cut -d ':' --output-delimiter=' ' -f1-))
+            echo "::error title=${fields[2]} coding etyle error,file=${fields[0]},line=${fields[1}::${fields[3]}"
+          done < $input
+
+      - name: Report Results
+        run: |
+          NBE=$(cat /tmp/coding-style-reports.log | wc -l)
+          if [ $NBE -gt 0 ]; then
+            exit 1
+          fi
+          
