@@ -25,7 +25,7 @@ jobs:
           input=/tmp/coding-style-reports.log
           while IFS= read -ra line; do
             fields=($(printf "%s" "$line" | cut -d ':' --output-delimiter=' ' -f1-))
-            echo "::error title=${fields[2]} coding etyle error,file=${fields[0]},line=${fields[1}::${fields[3]}"
+            echo "::error title=${fields[2]} coding etyle error,file=${fields[0]},line=${fields[1]}::${fields[3]}"
           done < $input
 
       - name: Report Results
