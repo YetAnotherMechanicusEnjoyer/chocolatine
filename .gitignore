@@ -1,0 +1,13 @@
+.cache
+compile_commands.json
+.idea
+guacamole
+*.o
+coding-style-reports.log
+*.gcno
+*.a
+*.out
+*.gcda
+vgcore*
+unit_tests
+bonus
