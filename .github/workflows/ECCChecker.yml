@@ -1,0 +1,161 @@
+name: ECC Checker
+run-name: ${{ github.actor }} | ${{ github.event_name }} | ${{ github.workflow}} | branch '${{ github.ref_name }}'
+on:
+  push:
+    branches-ignore:
+      - "ga-ignore-**"
+  pull_request:
+    branches-ignore:
+      - "ga-ignore-**"
+
+env:
+  SOURCE_DIR: src
+  BANNED_FUNC_FILE: assets/txt/banned
+  MIRROR_URL: git@github.com:EpitechPGEPromo2029/G-ING-210-BDX-2-1-wolf3d-raphael.farge.git
+  MIRROR_REPO: EpitechPGEPromo2029/G-ING-210-BDX-2-1-wolf3d-raphael.farge
+  EXECUTABLES: wolf3d
+
+jobs:
+  check_repository:
+    runs-on: ubuntu-latest
+    outputs:
+      same_repo: ${{ steps.repo.outputs.same_repo }}
+
+    steps:
+      - name: Check repository's name
+        id: repo
+        run: |
+          if [[ "${{ github.repository }}" == "${{ env.MIRROR_REPO }}" ]]; then
+            echo "same_repo=true" >> $GITHUB_OUTPUT
+          else
+            echo "same_repo=false" >> $GITHUB_OUTPUT
+          fi
+
+  check_banned_functions:
+    runs-on: ubuntu-latest
+    outputs:
+      banned_func: ${{ steps.func.outputs.banned_func }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          repository: ""
+
+      - name: Check Functions
+        id: func
+        run: |
+          if [ ! -f "$BANNED_FUNC_FILE" ]; then
+              echo "::warning file:${BANNED_FUNC_FILE}::Le fichier $BANNED_FUNC_FILE n'existe pas."
+          else
+              while IFS= read -r function || [ -n "$function" ]; do
+                  if [[ -z "$function" || "$function" =~ ^# ]]; then
+                      continue
+                  fi
+                  FOUND=$(grep -rn --include="*.c" "\b$function\b" "$SOURCE_DIR" 2>/dev/null | sed 's/: .*$//')
+
+                  if [ -n "$FOUND" ]; then
+                      while IFS= read -r location; do
+                          echo "::error file=${location}::${function} is a banned function !"
+                      done <<< "$FOUND"
+                      echo "banned_func=true" >> $GITHUB_OUTPUT
+                      exit 1
+                  fi
+              done < "$BANNED_FUNC_FILE"
+          fi
+          echo "banned_func=false" >> $GITHUB_OUTPUT
+
+  check_coding_style:
+    runs-on: ubuntu-latest
+    container: ghcr.io/epitech/coding-style-checker:latest
+    outputs:
+      check_coding_style: ${{ steps.results.outputs.check_coding_style }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          repository: ""
+
+      - name: Coding Style
+        run: check.sh . /tmp
+
+      - name: Coding style error
+        run: |
+          input=/tmp/coding-style-reports.log
+          while IFS= read -r line; do
+            file=$(echo "$line" | cut -d':' -f1)
+            n_line=$(echo "$line" | cut -d':' -f2)
+            title=$(echo "$line" | cut -d':' -f3)
+            err=$(echo "$line" | cut -d':' -f4-)
+            echo "::error title=${title} coding style error,file=${file},line=${n_line}::${err}"
+          done < $input
+
+      - name: Report Results
+        id: results
+        run: |
+          NBE=$(cat /tmp/coding-style-reports.log | wc -l)
+          if [ $NBE -gt 0 ]; then
+            echo "check_coding_style=true" >> $GITHUB_OUTPUT
+            exit 1
+          else
+            echo "check_coding_style=false" >> $GITHUB_OUTPUT
+          fi
+
+  check_program_compilation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    container: epitechcontent/epitest-docker:latest
+    needs: [check_coding_style, check_repository, check_banned_functions]
+
+    if: ${{ success() && needs.check_banned_functions.outputs.banned_func == 'false'  && needs.check_repository.outputs.same_repo == 'false' && needs.check_coding_style.outputs.check_coding_style == 'false' }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          repository: ""
+
+      - name: Compile Repo
+        run: make
+
+      - name: Clean Repo
+        run: make clean
+
+      - name: Check Compilation
+        run: |
+          for binary in ${{ env.EXECUTABLES }}; do
+            if [ ! -x "$binary" ]; then
+              echo "::error::File $binary does not exist or is not executable"
+              echo "check_compilation=false" >> $GITHUB_OUTPUT
+              exit 1
+            else
+              echo "check_compilation=true" >> $GITHUB_OUTPUT
+            fi
+          done
+
+  run_tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    container: epitechcontent/epitest-docker:latest
+    if: success()
+    needs: check_program_compilation
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          repository: ""
+
+      - name: Compile & Run tests
+        run: make run_tests
+
+  push_to_mirror:
+    runs-on: ubuntu-latest
+    needs: run_tests
+    if: ${{ github.event_name == 'push' && success() }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pixta-dev/repository-mirroring-action@v1
+        with:
+          target_repo_url: ${{env.MIRROR_URL}}
+          ssh_private_key: ${{secrets.GIT_SSH_PRIVATE_KEY}}
